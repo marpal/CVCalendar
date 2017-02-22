@@ -63,9 +63,10 @@ public final class CVCalendarView: UIView {
 
     public var presentedDate: CVDate! {
         didSet {
-            let calendar = self.delegate?.calendar?() ?? Calendar.current
-            if oldValue != nil && presentedDate.convertedDate(calendar: calendar) != oldValue.convertedDate(calendar: calendar) {
-                delegate?.presentedDateUpdated?(presentedDate)
+            if let _ = oldValue {
+                if presentedDate.convertedDate(calendar: Calendar.current) != oldValue.convertedDate(calendar: Calendar.current) {
+                    delegate?.presentedDateUpdated?(presentedDate)
+                }
             }
         }
     }
@@ -97,52 +98,6 @@ public final class CVCalendarView: UIView {
             return should
         }
         return true
-    }
-    
-    
-    public var shouldSelectRange: Bool {
-        get {
-            if let delegate = delegate, let should = delegate.shouldSelectRange?() {
-                return should
-            }
-            return false
-        }
-    }
-    
-    public var disableScrollingBeyondDate: Date? {
-        get {
-            if let delegate = delegate, let date = delegate.disableScrollingBeforeDate?() {
-                return date
-            }
-            return nil
-        }
-    }
-    
-    public var maxSelectableRange: Int {
-        get {
-            if let delegate = delegate, let range = delegate.maxSelectableRange?() {
-                return range
-            }
-            return 0
-        }
-    }
-    
-    public var earliestSelectableDate: Date? {
-        get {
-            if let delegate = delegate, let date = delegate.earliestSelectableDate?() {
-                return date
-            }
-            return nil
-        }
-    }
-    
-    public var latestSelectableDate: Date? {
-        get {
-            if let delegate = delegate, let date = delegate.latestSelectableDate?() {
-                return date
-            }
-            return nil
-        }
     }
 
     // MARK: - Calendar View Delegate
@@ -313,9 +268,9 @@ extension CVCalendarView {
 
 extension CVCalendarView {
     public func didSelectDayView(_ dayView: CVCalendarDayView) {
-        presentedDate = dayView.date
-        delegate?.didSelectDayView?(dayView, animationDidFinish: false)
         if let controller = contentController {
+            presentedDate = dayView.date
+            delegate?.didSelectDayView?(dayView, animationDidFinish: false)
             controller.performedDayViewSelection(dayView) // TODO: Update to range selection
         }
     }
@@ -324,8 +279,8 @@ extension CVCalendarView {
 // MARK: - Convenience API
 
 extension CVCalendarView {
-    public func changeDaysOutShowingState(shouldShow: Bool) {
-        contentController.updateDayViews(shouldShow: shouldShow)
+    public func changeDaysOutShowingState(_ shouldShow: Bool) {
+        contentController.updateDayViews(shouldShow)
     }
 
     public func toggleViewWithDate(_ date: Foundation.Date) {
@@ -370,13 +325,14 @@ extension CVCalendarView {
         newController.scrollView.alpha = 0
         addSubview(newController.scrollView)
 
-        UIView.animate(withDuration: 0.5, delay: 0, options: UIViewAnimationOptions(), animations: { [weak self] in
-            self?.contentController.scrollView.alpha = 0
+        UIView.animate(withDuration: 0.5, delay: 0,
+                                   options: UIViewAnimationOptions(), animations: {
+            self.contentController.scrollView.alpha = 0
             newController.scrollView.alpha = 1
-        }) { [weak self] _ in
-            self?.contentController.scrollView.removeAllSubviews()
-            self?.contentController.scrollView.removeFromSuperview()
-            self?.contentController = newController
+        }) { _ in
+            self.contentController.scrollView.removeAllSubviews()
+            self.contentController.scrollView.removeFromSuperview()
+            self.contentController = newController
             completion()
         }
     }

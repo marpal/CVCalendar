@@ -8,7 +8,7 @@
 
 import UIKit
 
-public final class CVCalendarWeekContentViewController: CVCalendarContentViewController, CVCalendarContentPresentationCoordinator {
+public final class CVCalendarWeekContentViewController: CVCalendarContentViewController {
     fileprivate var weekViews: [Identifier : WeekView]
     fileprivate var monthViews: [Identifier : MonthView]
 
@@ -161,30 +161,23 @@ public final class CVCalendarWeekContentViewController: CVCalendarContentViewCon
 
             UIView.animate(withDuration: toggleDateAnimationDuration, delay: 0,
                                        options: UIViewAnimationOptions.curveEaseInOut,
-                                       animations: { [weak self] in
-                guard let strongSelf = self else {
-                    return
-                }
-                strongSelf.prepareTopMarkersOnWeekView(presented, hidden: false)
+                                       animations: {
+                self.prepareTopMarkersOnWeekView(presented, hidden: false)
 
-                extra.frame.origin.x += strongSelf.scrollView.frame.width
-                presented.frame.origin.x += strongSelf.scrollView.frame.width
-                previous.frame.origin.x += strongSelf.scrollView.frame.width
+                extra.frame.origin.x += self.scrollView.frame.width
+                presented.frame.origin.x += self.scrollView.frame.width
+                previous.frame.origin.x += self.scrollView.frame.width
 
-                strongSelf.replaceWeekView(presented, withIdentifier: strongSelf.following, animatable: false)
-                strongSelf.replaceWeekView(previous, withIdentifier: strongSelf.presented, animatable: false)
-            }) { [weak self] _ in
-                guard let strongSelf = self else {
-                    return
-                }
-                
+                self.replaceWeekView(presented, withIdentifier: self.following, animatable: false)
+                self.replaceWeekView(previous, withIdentifier: self.presented, animatable: false)
+            }) { _ in
                 extra.removeFromSuperview()
-                strongSelf.insertWeekView(strongSelf.getPreviousWeek(previous), withIdentifier: strongSelf.previous)
-                strongSelf.updateSelection()
-                strongSelf.presentationEnabled = true
+                self.insertWeekView(self.getPreviousWeek(previous), withIdentifier: self.previous)
+                self.updateSelection()
+                self.presentationEnabled = true
 
-                for weekView in strongSelf.weekViews.values {
-                    strongSelf.prepareTopMarkersOnWeekView(weekView, hidden: false)
+                for weekView in self.weekViews.values {
+                    self.prepareTopMarkersOnWeekView(weekView, hidden: false)
                 }
             }
         }
@@ -201,38 +194,32 @@ public final class CVCalendarWeekContentViewController: CVCalendarContentViewCon
 
             UIView.animate(withDuration: 0.5, delay: 0,
                                        options: UIViewAnimationOptions(),
-                                       animations: { [weak self] in
-                guard let strongSelf = self else {
-                    return
-                }
-                strongSelf.prepareTopMarkersOnWeekView(presented, hidden: false)
+                                       animations: {
+                self.prepareTopMarkersOnWeekView(presented, hidden: false)
 
-                extra.frame.origin.x -= strongSelf.scrollView.frame.width
-                presented.frame.origin.x -= strongSelf.scrollView.frame.width
-                following.frame.origin.x -= strongSelf.scrollView.frame.width
+                extra.frame.origin.x -= self.scrollView.frame.width
+                presented.frame.origin.x -= self.scrollView.frame.width
+                following.frame.origin.x -= self.scrollView.frame.width
 
-                strongSelf.replaceWeekView(presented, withIdentifier: strongSelf.previous, animatable: false)
-                strongSelf.replaceWeekView(following, withIdentifier: strongSelf.presented, animatable: false)
-            }) { [weak self] _ in
-                guard let strongSelf = self else {
-                    return
-                }
-                
+                self.replaceWeekView(presented, withIdentifier: self.previous, animatable: false)
+                self.replaceWeekView(following, withIdentifier: self.presented, animatable: false)
+            }) { _ in
                 extra.removeFromSuperview()
-                strongSelf.insertWeekView(strongSelf.getFollowingWeek(following), withIdentifier: strongSelf.following)
-                strongSelf.updateSelection()
-                strongSelf.presentationEnabled = true
+                self.insertWeekView(self.getFollowingWeek(following),
+                                    withIdentifier: self.following)
+                self.updateSelection()
+                self.presentationEnabled = true
 
-                for weekView in strongSelf.weekViews.values {
-                    strongSelf.prepareTopMarkersOnWeekView(weekView, hidden: false)
+                for weekView in self.weekViews.values {
+                    self.prepareTopMarkersOnWeekView(weekView, hidden: false)
                 }
             }
         }
 
     }
 
-    public override func updateDayViews(shouldShow: Bool) {
-      setDayOutViewsVisible(monthViews: monthViews, visible: shouldShow)
+    public override func updateDayViews(_ hidden: Bool) {
+        setDayOutViewsVisible(hidden)
     }
 
     fileprivate var togglingBlocked = false
@@ -282,10 +269,10 @@ public final class CVCalendarWeekContentViewController: CVCalendarContentViewCon
                                            animations: {
                     presentedWeekView.alpha = 0
                     currentWeekView.alpha = 1
-                }) { [weak self]  _ in
+                }) {  _ in
                     presentedWeekView.removeFromSuperview()
-                    self?.selectDayViewWithDay(currentDate.day, inWeekView: currentWeekView)
-                    self?.togglingBlocked = false
+                    self.selectDayViewWithDay(currentDate.day, inWeekView: currentWeekView)
+                    self.togglingBlocked = false
                 }
             } else {
                 if let currentWeekView = weekViews[presented] {
@@ -407,6 +394,34 @@ extension CVCalendarWeekContentViewController {
     public func prepareTopMarkersOnWeekView(_ weekView: WeekView, hidden: Bool) {
         weekView.mapDayViews { dayView in
             dayView.topMarker?.isHidden = hidden
+        }
+    }
+
+    public func setDayOutViewsVisible(_ visible: Bool) {
+        for monthView in monthViews.values {
+            monthView.mapDayViews { dayView in
+                if dayView.isOut {
+                    if !visible {
+                        dayView.alpha = 0
+                        dayView.isHidden = false
+                    }
+
+                    UIView.animate(withDuration: 0.5, delay: 0,
+                        options: UIViewAnimationOptions(),
+                        animations: {
+                            dayView.alpha = visible ? 0 : 1
+                            },
+                        completion: { _ in
+                            if visible {
+                                dayView.alpha = 1
+                                dayView.isHidden = true
+                                dayView.isUserInteractionEnabled = false
+                            } else {
+                                dayView.isUserInteractionEnabled = true
+                            }
+                    })
+                }
+            }
         }
     }
 

@@ -26,8 +26,6 @@ public final class CVCalendarMonthView: UIView {
         return calendarView.touchController
     }
 
-    var allowScrollToPreviousMonth = true
-    
     // MARK: - Public properties
 
     public weak var calendarView: CVCalendarView!
